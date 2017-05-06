@@ -20,7 +20,7 @@
                   :class="['vuetable-th-slot-'+extractArgs(field.name), field.titleClass, {'sortable': isSortable(field)}]"
                   v-html="renderTitle(field)"
               ></th>
-              <th v-if="apiMode && extractName(field.name) == '__sequence'"
+              <th v-if="extractName(field.name) == '__sequence'"
                   :class="['vuetable-th-sequence', field.titleClass || '']" v-html="renderTitle(field)">
               </th>
               <th v-if="notIn(extractName(field.name), ['__sequence', '__checkbox', '__component', '__slot'])"
@@ -44,8 +44,8 @@
           <template v-for="field in tableFields">
             <template v-if="field.visible">
               <template v-if="isSpecialField(field.name)">
-                <td v-if="apiMode && extractName(field.name) == '__sequence'" :class="['vuetable-sequence', field.dataClass]"
-                  v-html="tablePagination.from + index">
+                <td v-if="extractName(field.name) == '__sequence'" :class="['vuetable-sequence', field.dataClass]"
+                  v-html="renderSequence(index)">
                 </td>
                 <td v-if="extractName(field.name) == '__handle'" :class="['vuetable-handle', field.dataClass]"
                   v-html="renderIconTag(['handle-icon', css.handleIcon])"
@@ -129,7 +129,7 @@ export default {
       default: true
     },
     data: {
-      type: Array,
+      type: [Array, Object],
       default: function() {
         return null
       }
@@ -249,7 +249,7 @@ export default {
       visibleDetailRows: [],
     }
   },
-  created () {
+  mounted () {
     this.normalizeFields()
     this.$nextTick(function() {
       this.fireEvent('initialized', this.tableFields)
@@ -258,7 +258,7 @@ export default {
     if (this.apiMode && this.loadOnStart) {
       this.loadData()
     }
-    if (this.apiMode == false && this.data.length > 0) {
+    if (this.apiMode == false && this.data) {
       this.setData(this.data)
     }
   },
@@ -329,7 +329,15 @@ export default {
     },
     setData (data) {
       this.apiMode = false
-      this.tableData = data
+      this.fireEvent('loading')
+
+      this.tableData = this.getObjectValue(data, this.dataPath, null)
+      this.tablePagination = this.getObjectValue(data, this.paginationPath, null)
+
+      this.$nextTick(function() {
+        this.fireEvent('pagination-data', this.tablePagination)
+        this.fireEvent('loaded')
+      })
     },
     setTitle (str) {
       if (this.isSpecialField(str)) {
@@ -347,6 +355,11 @@ export default {
       }
 
       return title
+    },
+    renderSequence (index) {
+      return this.tablePagination 
+        ? this.tablePagination.from + index 
+        : index
     },
     isSpecialField (fieldName) {
       return fieldName.slice(0, 2) === '__'
@@ -495,7 +508,12 @@ export default {
       return this.sortOrder[i].field === field.name && this.sortOrder[i].sortField === field.sortField
     },
     orderBy (field, event) {
-      if ( ! this.isSortable(field) || ! this.apiMode) return
+      if ( ! this.isSortable(field) ) return
+
+      if ( ! this.apiMode) {
+        this.$emit(this.eventPrefix + 'request-sort', field, event)
+        return
+      }
 
       let key = this.multiSortKey.toLowerCase() + 'Key'
 

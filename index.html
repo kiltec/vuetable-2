@@ -98,8 +98,10 @@
 
                     <vuetable ref="vuetable"
                       api-url="http://vuetable.ratiw.net/api/users"
+                      :api-mode="false"
                       :fields="fields"
-                      pagination-path="pagination"
+                      :data="localData"
+                      pagination-path=""
                       :sort-order="sortOrder"
                       :multi-sort="multiSort"
                       :per-page="perPage"

@@ -3,6 +3,7 @@ import Vuetable from './components/Vuetable.vue'
 import VuetablePagination from './components/VuetablePagination.vue'
 import VuetablePaginationDropdown from './components/VuetablePaginationDropdown.vue'
 import VuetablePaginationInfo from './components/VuetablePaginationInfo.vue'
+import LocalData from '../static/local-data.js'
 
 let E_SERVER_ERROR = 'Error communicating with the server'
 
@@ -219,6 +220,7 @@ let vm = new Vue({
         direction: 'asc',
     }],
     multiSort: true,
+    localData: LocalData,
     paginationComponent: 'vuetable-pagination',
     perPage: 10,
     paginationInfoTemplate: 'Showing record: {from} to {to} from {total} item(s)',
