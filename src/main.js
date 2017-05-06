@@ -1,4 +1,5 @@
 import Vue from 'vue'
+import _ from 'lodash'
 import Vuetable from './components/Vuetable.vue'
 import VuetablePagination from './components/VuetablePagination.vue'
 import VuetablePaginationDropdown from './components/VuetablePaginationDropdown.vue'
@@ -221,9 +222,14 @@ let vm = new Vue({
     }],
     multiSort: true,
     localData: LocalData,
+    data: null,
     paginationComponent: 'vuetable-pagination',
     perPage: 10,
     paginationInfoTemplate: 'Showing record: {from} to {to} from {total} item(s)',
+    currentPage: 1,
+  },
+  created () {
+    this.chunkData()
   },
   watch: {
     'perPage' (val, oldVal) {
@@ -238,6 +244,27 @@ let vm = new Vue({
     }
   },
   methods: {
+    chunkData () {
+      let begin = (this.currentPage-1) * this.perPage
+      let end = begin + this.perPage
+      let pagination = this.localData.pagination
+      pagination.current_page = this.currentPage
+      this.data = {
+        pagination: pagination,
+        data: _.slice(this.localData['data'], begin, end)
+      }
+    },
+    chunkPage (page) {
+      console.log('currentPage: '+this.currentPage+'; last_page: '+this.localData.pagination.last_page)
+      if (page == 'next' && this.currentPage < this.localData.pagination.last_page) {
+        this.currentPage++
+      } else if (page == 'prev' && this.currentPage > 1) {
+        this.currentPage--
+      } else {
+        this.currentPage = page
+      }
+      this.chunkData()
+    },
     transform (data) {
       let transformed = {}
       transformed.pagination = {
@@ -373,7 +400,9 @@ let vm = new Vue({
       this.$refs.pagination.setPaginationData(tablePagination)
     },
     onChangePage (page) {
-      this.$refs.vuetable.changePage(page)
+      // this.$refs.vuetable.changePage(page)
+      console.log('onChangePage: ', page)
+      this.chunkPage(page)
     },
     onInitialized (fields) {
       console.log('onInitialized', fields)

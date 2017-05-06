@@ -329,6 +329,11 @@ export default {
     },
     setData (data) {
       this.apiMode = false
+      if (Array.isArray(data)) {
+        this.tableData = data
+        return
+      }
+
       this.fireEvent('loading')
 
       this.tableData = this.getObjectValue(data, this.dataPath, null)
