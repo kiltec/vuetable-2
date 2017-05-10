@@ -228,7 +228,7 @@ let vm = new Vue({
     paginationInfoTemplate: 'Showing record: {from} to {to} from {total} item(s)',
     currentPage: 1,
   },
-  created () {
+  mounted () {
     this.chunkData()
   },
   watch: {
@@ -249,18 +249,22 @@ let vm = new Vue({
       let end = begin + this.perPage
       let pagination = this.localData.pagination
       pagination.current_page = this.currentPage
-      this.data = {
+
+      this.$refs.vuetable.setData({
         pagination: pagination,
         data: _.slice(this.localData['data'], begin, end)
-      }
+      })
     },
     chunkPage (page) {
-      console.log('currentPage: '+this.currentPage+'; last_page: '+this.localData.pagination.last_page)
-      if (page == 'next' && this.currentPage < this.localData.pagination.last_page) {
-        this.currentPage++
-      } else if (page == 'prev' && this.currentPage > 1) {
-        this.currentPage--
-      } else {
+      if (page == 'next') {
+        if (this.currentPage < this.localData.pagination.last_page) {
+          this.currentPage++
+        }
+      } else if (page == 'prev') {
+        if (this.currentPage > 1) {
+          this.currentPage--
+        }
+      } else if (page > 0 && page <= this.localData.pagination.last_page) {
         this.currentPage = page
       }
       this.chunkData()
@@ -401,7 +405,6 @@ let vm = new Vue({
     },
     onChangePage (page) {
       // this.$refs.vuetable.changePage(page)
-      console.log('onChangePage: ', page)
       this.chunkPage(page)
     },
     onInitialized (fields) {
