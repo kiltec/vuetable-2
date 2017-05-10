@@ -416,5 +416,10 @@ let vm = new Vue({
       this.$refs.paginationInfo.resetData()
       this.$refs.pagination.resetData()
     },
+    onSort (field, event) {
+      console.log('onSort: ', field.sortField)
+      this.localData.data = _.orderBy(this.localData.data, field.sortField)
+      this.$refs.vuetable.setData(this.localData)
+    }
   },
 })
