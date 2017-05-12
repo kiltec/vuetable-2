@@ -130,7 +130,13 @@ export default {
     },
     data: {
       type: [Array, Object],
-      default: function() {
+      default () {
+        return null
+      }
+    },
+    dataManager: {
+      type: Function,
+      default () {
         return null
       }
     },
@@ -384,7 +390,10 @@ export default {
       return arr.indexOf(str) === -1
     },
     loadData (success = this.loadSuccess, failed = this.loadFailed) {
-      if (! this.apiMode) return
+      if (! this.apiMode) {
+        this.callDataManager()
+        return
+      }
 
       this.fireEvent('loading')
 
@@ -804,6 +813,14 @@ export default {
       return this.renderIcon === null
         ? `<i class="${classes.join(' ')}" ${options}></i>`
         : this.renderIcon(classes, options)
+    },
+    callDataManager () {
+      if (this.dataManager === null) return
+
+      let pagination = this.tablePagination == null ? {} : this.tablePagination
+      pagination.current_page = this.currentPage
+
+      this.setData(this.dataManager(this.sortOrder, pagination))
     },
     onRowClass (dataItem, index) {
       if (this.rowClassCallback !== '') {
