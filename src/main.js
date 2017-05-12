@@ -371,6 +371,26 @@ let vm = new Vue({
     rowClassCB (data, index) {
       return (index % 2) === 0 ? 'odd' : 'even'
     },
+    dataManager (sortOrder, pagination) {
+      sortOrder[0].sortField = typeof(sortOrder[0].sortField) === 'undefined' ? sortOrder[0].field : sortOrder[0].sortField
+
+      pagination.total = this.localData.data.length
+      pagination.per_page = this.perPage
+      pagination.current_page = this.currentPage
+      pagination.last_page = Math.ceil(pagination.total / pagination.per_page)
+      pagination.from = (this.currentPage-1) * this.perPage + 1
+      pagination.to = pagination.from + this.perPage -1
+
+
+      console.log('dataManager: ', sortOrder, pagination)
+
+      this.localData.data = _.orderBy(this.localData.data, sortOrder[0].sortField, sortOrder[0].direction)
+
+      return {
+        pagination: pagination,
+        data: _.slice(this.localData['data'], pagination.from-1, pagination.to+1)
+      }
+    },
     onCellClicked (data, field, event) {
       console.log('cellClicked', field.name)
       if (field.name !== '__actions') {
@@ -404,8 +424,8 @@ let vm = new Vue({
       this.$refs.pagination.setPaginationData(tablePagination)
     },
     onChangePage (page) {
-      // this.$refs.vuetable.changePage(page)
-      this.chunkPage(page)
+      this.$refs.vuetable.changePage(page)
+      // this.chunkPage(page)
     },
     onInitialized (fields) {
       console.log('onInitialized', fields)

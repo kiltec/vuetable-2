@@ -261,12 +261,13 @@ export default {
       this.fireEvent('initialized', this.tableFields)
     })
 
-    if (this.apiMode && this.loadOnStart) {
+    // if (this.apiMode && this.loadOnStart) {
+    if (this.loadOnStart) {
       this.loadData()
     }
-    if (this.apiMode == false && this.data) {
-      this.setData(this.data)
-    }
+    // if (this.apiMode == false && this.data) {
+    //   this.setData(this.data)
+    // }
   },
   computed: {
     useDetailRow () {
@@ -526,7 +527,8 @@ export default {
 
       if ( ! this.apiMode) {
         this.$emit(this.eventPrefix + 'request-sort', field, event)
-        return
+        // this.callDataManager()
+        // return
       }
 
       let key = this.multiSortKey.toLowerCase() + 'Key'
@@ -814,12 +816,27 @@ export default {
         ? `<i class="${classes.join(' ')}" ${options}></i>`
         : this.renderIcon(classes, options)
     },
+    makePagination (pagination = null) {
+      if (pagination === null) {
+        pagination = {}
+      }
+
+      return {
+        total: typeof(pagination.total) === 'undefined' ? 0 : pagination.total,
+        per_page: typeof(pagination.per_page) === 'undefined' ? this.perPage : pagination.per_page,
+        current_page: typeof(pagination.current_page) === 'undefined' ? this.currentPage : pagination.current_page,
+        last_page: typeof(pagination.last_page) === 'undefined' ? this.currentPage : pagination.last_page,
+        next_page_url: typeof(pagination.next_page_url) === 'undefined' ? '' : pagination.next_page_url,
+        prev_page_url: typeof(pagination.prev_page_url) === 'undefined' ? '' : pagination.prev_page_url,
+        from: typeof(pagination.from) === 'undefined' ? 1 : pagination.from,
+        to: typeof(pagination.to) === 'undefined' ? this.perPage : pagination.to
+      }
+    },
     callDataManager () {
+      console.log('callDataManager: ', typeof(this.dataManager))
       if (this.dataManager === null) return
 
-      let pagination = this.tablePagination == null ? {} : this.tablePagination
-      pagination.current_page = this.currentPage
-
+      let pagination = this.makePagination(this.tablePagination)
       this.setData(this.dataManager(this.sortOrder, pagination))
     },
     onRowClass (dataItem, index) {
