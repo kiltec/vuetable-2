@@ -222,6 +222,7 @@ let vm = new Vue({
     }],
     multiSort: true,
     localData: LocalData,
+    dataCount: 0,
     data: null,
     paginationComponent: 'vuetable-pagination',
     perPage: 10,
@@ -229,7 +230,7 @@ let vm = new Vue({
     currentPage: 1,
   },
   mounted () {
-    this.chunkData()
+    this.dataCount = this.localData.data.length
   },
   watch: {
     'perPage' (val, oldVal) {
@@ -244,31 +245,6 @@ let vm = new Vue({
     }
   },
   methods: {
-    chunkData () {
-      let begin = (this.currentPage-1) * this.perPage
-      let end = begin + this.perPage
-      let pagination = this.localData.pagination
-      pagination.current_page = this.currentPage
-
-      this.$refs.vuetable.setData({
-        pagination: pagination,
-        data: _.slice(this.localData['data'], begin, end)
-      })
-    },
-    chunkPage (page) {
-      if (page == 'next') {
-        if (this.currentPage < this.localData.pagination.last_page) {
-          this.currentPage++
-        }
-      } else if (page == 'prev') {
-        if (this.currentPage > 1) {
-          this.currentPage--
-        }
-      } else if (page > 0 && page <= this.localData.pagination.last_page) {
-        this.currentPage = page
-      }
-      this.chunkData()
-    },
     transform (data) {
       let transformed = {}
       transformed.pagination = {
@@ -372,23 +348,23 @@ let vm = new Vue({
       return (index % 2) === 0 ? 'odd' : 'even'
     },
     dataManager (sortOrder, pagination) {
-      sortOrder[0].sortField = typeof(sortOrder[0].sortField) === 'undefined' ? sortOrder[0].field : sortOrder[0].sortField
-
-      pagination.total = this.localData.data.length
-      pagination.per_page = this.perPage
-      pagination.current_page = this.currentPage
-      pagination.last_page = Math.ceil(pagination.total / pagination.per_page)
-      pagination.from = (this.currentPage-1) * this.perPage + 1
-      pagination.to = pagination.from + this.perPage -1
-
-
       console.log('dataManager: ', sortOrder, pagination)
 
-      this.localData.data = _.orderBy(this.localData.data, sortOrder[0].sortField, sortOrder[0].direction)
+      let data = this.localData.data
+
+      if (this.searchFor) {
+        let txt = new RegExp(this.searchFor, 'i')
+        data = _.filter(data, function(item) {
+          return item.name.search(txt) >= 0 || item.email.search(txt) >= 0 || item.nickname.search(txt) >= 0
+        })
+      }
+      data = _.orderBy(data, sortOrder[0].sortField, sortOrder[0].direction)
+
+      pagination = this.$refs.vuetable.makePagination(data.length)
 
       return {
         pagination: pagination,
-        data: _.slice(this.localData['data'], pagination.from-1, pagination.to+1)
+        data: _.slice(data, pagination.from-1, pagination.to)
       }
     },
     onCellClicked (data, field, event) {
@@ -425,7 +401,6 @@ let vm = new Vue({
     },
     onChangePage (page) {
       this.$refs.vuetable.changePage(page)
-      // this.chunkPage(page)
     },
     onInitialized (fields) {
       console.log('onInitialized', fields)

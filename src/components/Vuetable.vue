@@ -134,6 +134,10 @@ export default {
         return null
       }
     },
+    dataTotal: {
+      type: Number,
+      default: 0
+    },
     dataManager: {
       type: Function,
       default () {
@@ -261,13 +265,9 @@ export default {
       this.fireEvent('initialized', this.tableFields)
     })
 
-    // if (this.apiMode && this.loadOnStart) {
     if (this.loadOnStart) {
       this.loadData()
     }
-    // if (this.apiMode == false && this.data) {
-    //   this.setData(this.data)
-    // }
   },
   computed: {
     useDetailRow () {
@@ -283,13 +283,13 @@ export default {
         return field.visible
       }).length
     },
-    lessThanMinRows: function() {
+    lessThanMinRows () {
       if (this.tableData === null || this.tableData.length === 0) {
         return true
       }
       return this.tableData.length < this.minRows
     },
-    blankRows: function() {
+    blankRows () {
       if (this.tableData === null || this.tableData.length === 0) {
         return this.minRows
       }
@@ -298,6 +298,12 @@ export default {
       }
 
       return this.minRows - this.tableData.length
+    },
+    isApiMode () {
+      return this.apiMode 
+    },
+    isDataMode () {
+      return ! this.apiMode
     }
   },
   methods: {
@@ -391,7 +397,7 @@ export default {
       return arr.indexOf(str) === -1
     },
     loadData (success = this.loadSuccess, failed = this.loadFailed) {
-      if (! this.apiMode) {
+      if (this.isDataMode) {
         this.callDataManager()
         return
       }
@@ -524,12 +530,6 @@ export default {
     },
     orderBy (field, event) {
       if ( ! this.isSortable(field) ) return
-
-      if ( ! this.apiMode) {
-        this.$emit(this.eventPrefix + 'request-sort', field, event)
-        // this.callDataManager()
-        // return
-      }
 
       let key = this.multiSortKey.toLowerCase() + 'Key'
 
@@ -707,8 +707,8 @@ export default {
       let els = document.querySelectorAll(selector)
 
       //fixed:document.querySelectorAll return the typeof nodeList not array
-      if (els.forEach===undefined)
-        els.forEach=function(cb){
+      if (els.forEach === undefined)
+        els.forEach = function(cb){
           [].forEach.call(els, cb);
         }
 
@@ -816,28 +816,33 @@ export default {
         ? `<i class="${classes.join(' ')}" ${options}></i>`
         : this.renderIcon(classes, options)
     },
-    makePagination (pagination = null) {
-      if (pagination === null) {
-        pagination = {}
-      }
+    makePagination (total = null, perPage = null, currentPage = null) {
+      let pagination = {}
+      total = total === null ? this.dataTotal : total
+      perPage = perPage === null ? this.perPage : perPage
+      currentPage = currentPage === null ? this.currentPage : currentPage
 
       return {
-        total: typeof(pagination.total) === 'undefined' ? 0 : pagination.total,
-        per_page: typeof(pagination.per_page) === 'undefined' ? this.perPage : pagination.per_page,
-        current_page: typeof(pagination.current_page) === 'undefined' ? this.currentPage : pagination.current_page,
-        last_page: typeof(pagination.last_page) === 'undefined' ? this.currentPage : pagination.last_page,
-        next_page_url: typeof(pagination.next_page_url) === 'undefined' ? '' : pagination.next_page_url,
-        prev_page_url: typeof(pagination.prev_page_url) === 'undefined' ? '' : pagination.prev_page_url,
-        from: typeof(pagination.from) === 'undefined' ? 1 : pagination.from,
-        to: typeof(pagination.to) === 'undefined' ? this.perPage : pagination.to
+        'total': total,
+        'per_page': perPage,
+        'current_page': currentPage,
+        'last_page': Math.ceil(total / perPage) || 0,
+        'next_page_url': '',
+        'prev_page_url': '',
+        'from': (currentPage -1) * perPage +1,
+        'to': Math.min(currentPage * perPage, total)
       }
     },
+    normalizeSortOrder () {
+      this.sortOrder.forEach(function(item) {
+        item.sortField = item.sortField || item.field
+      })
+    },
     callDataManager () {
-      console.log('callDataManager: ', typeof(this.dataManager))
       if (this.dataManager === null) return
 
-      let pagination = this.makePagination(this.tablePagination)
-      this.setData(this.dataManager(this.sortOrder, pagination))
+      this.normalizeSortOrder()
+      this.setData(this.dataManager(this.sortOrder, this.makePagination()))
     },
     onRowClass (dataItem, index) {
       if (this.rowClassCallback !== '') {
@@ -903,7 +908,7 @@ export default {
         this.loadData();
       }
     },
-    'apiUrl': function (newVal, oldVal) {
+    'apiUrl' (newVal, oldVal) {
       if(newVal !== oldVal)
         this.refresh()
     }
